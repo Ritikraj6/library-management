@@ -1,23 +1,31 @@
+"""Command-line library manager that stores records in library_records.dat.
+
+Run this file with Python to use the numbered menu. This program is separate
+from index.html: it uses a local pickle file, while the HTML page uses browser
+localStorage.
+"""
+
 import pickle
 import os
 
+# Name of the binary file used to store the library's book records.
 FILE_NAME = "library_records.dat"
 
 def setup_file():
-    """Create the binary file if it doesn't exist."""
+    """Create an empty database file when one does not already exist."""
     if not os.path.exists(FILE_NAME):
         with open(FILE_NAME, 'wb') as file:
             pass
 
 def add_book():
-    """Add a new book record to the binary file."""
+    """Ask for a book's details and append a new record to the database."""
     print("\n--- Add a New Book ---")
     try:
         book_id = input("Enter Book ID: ")
         title = input("Enter Book Title: ")
         author = input("Enter Author Name: ")
         
-        # Book structure
+        # Keep each book's fields together in one dictionary record.
         book = {
             'book_id': book_id,
             'title': title,
@@ -34,7 +42,7 @@ def add_book():
         print(f"Error while adding book: {e}")
 
 def view_all_books():
-    """Display all books stored in the binary file."""
+    """Read and display every book record stored in the database."""
     print("\n--- All Books in Library ---")
     try:
         if os.path.getsize(FILE_NAME) == 0:
@@ -56,7 +64,7 @@ def view_all_books():
         print(f"Error while reading books: {e}")
 
 def search_book():
-    """Search for a book by its ID in the binary file."""
+    """Find a book by ID and display its details, including borrower if issued."""
     print("\n--- Search Book ---")
     search_id = input("Enter Book ID to search: ")
     found = False
@@ -83,14 +91,14 @@ def search_book():
         print(f"Error while searching: {e}")
 
 def update_book():
-    """Update details of an existing book."""
+    """Update the title or author of a book identified by its ID."""
     print("\n--- Update Book Details ---")
     search_id = input("Enter Book ID to update: ")
     books = []
     found = False
     
     try:
-        # Read all records
+        # Load all records because the file must be rewritten to update one.
         with open(FILE_NAME, 'rb') as file:
             while True:
                 try:
@@ -98,7 +106,7 @@ def update_book():
                 except EOFError:
                     break
                     
-        # Update the specific record
+        # Change only the matching book; blank answers keep the current value.
         for book in books:
             if book['book_id'] == search_id:
                 print(f"Current Title: {book['title']}")
@@ -111,7 +119,7 @@ def update_book():
                 break
                 
         if found:
-            # Write everything back in write-binary mode
+            # Replace the database contents with the updated records.
             with open(FILE_NAME, 'wb') as file:
                 for book in books:
                     pickle.dump(book, file)
@@ -123,7 +131,7 @@ def update_book():
         print(f"Error while updating: {e}")
 
 def delete_book():
-    """Delete a book record from the binary file."""
+    """Remove the matching book and rewrite the remaining database records."""
     print("\n--- Delete a Book ---")
     search_id = input("Enter Book ID to delete: ")
     books = []
@@ -153,7 +161,7 @@ def delete_book():
         print(f"Error while deleting: {e}")
 
 def issue_book():
-    """Issue a book to a student/client."""
+    """Issue an available book to a named borrower and save the new status."""
     print("\n--- Issue a Book ---")
     search_id = input("Enter Book ID to issue: ")
     books = []
@@ -190,7 +198,7 @@ def issue_book():
         print(f"Error while issuing book: {e}")
 
 def return_book():
-    """Return an issued book."""
+    """Mark an issued book as available and clear its borrower name."""
     print("\n--- Return a Book ---")
     search_id = input("Enter Book ID to return: ")
     books = []
@@ -227,8 +235,10 @@ def return_book():
         print(f"Error while returning book: {e}")
 
 def main():
+    """Create the database, show the menu, and run the selected book action."""
     setup_file()
     while True:
+        # Keep showing the menu until the user chooses the exit option.
         print("\n" + "="*40)
         print("      LIBRARY MANAGEMENT SYSTEM      ")
         print("="*40)
@@ -244,6 +254,7 @@ def main():
         
         choice = input("Enter your choice (1-8): ")
         
+        # Route the user's menu choice to the matching library operation.
         if choice == '1':
             add_book()
         elif choice == '2':

@@ -1,11 +1,18 @@
 <!DOCTYPE html>
+<!--
+    Browser-based library manager. This page runs independently from
+    library_management.py and saves its records in this browser's localStorage.
+    JavaScript below handles adding, searching, issuing, returning, and deleting books.
+-->
 <html lang="en">
 <head>
+    <!-- Set page encoding, responsive layout, title, and external UI libraries. -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>LMS - Bugatti Edition</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <!-- Define the custom Tailwind colors, fonts, shadows, and animations. -->
     <script>
         tailwind.config = {
             theme: {
@@ -38,6 +45,7 @@
             }
         }
     </script>
+    <!-- Small scrollbar styles that complement the page theme. -->
     <style>
         /* Custom scrollbar for a sleek look */
         ::-webkit-scrollbar { width: 8px; height: 8px; }
@@ -48,7 +56,7 @@
 </head>
 <body class="bg-bugattiBlack min-h-screen font-sans text-gray-300 overflow-x-hidden">
     
-    <!-- Navbar -->
+    <!-- Top navigation, page identity, help dialog button, and live indicator. -->
     <nav class="bg-carbon border-b border-bugattiBlue/30 shadow-neon">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between h-16 items-center">
@@ -71,7 +79,7 @@
 
     <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col md:flex-row gap-8">
         
-        <!-- Sidebar / Add Book -->
+        <!-- Sidebar: form for adding a book and summary counts. -->
         <div class="w-full md:w-1/3 space-y-6">
             <div class="bg-carbonLight p-6 rounded-xl border border-gray-800 shadow-lg relative overflow-hidden group">
                 <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-bugattiBlack via-bugattiBlue to-bugattiBlack opacity-50 group-hover:opacity-100 transition-opacity duration-500"></div>
@@ -95,7 +103,7 @@
                 </form>
             </div>
 
-            <!-- Telemetry / Stats -->
+            <!-- Summary counters for all books and currently issued books. -->
             <div class="bg-carbon p-6 rounded-xl border border-bugattiBlue/30 shadow-neon relative overflow-hidden">
                 <div class="absolute -right-4 -top-4 text-bugattiBlue/5 text-9xl z-0"><i class="fas fa-chart-bar"></i></div>
                 <h2 class="text-lg font-semibold mb-2 text-white relative z-10"><i class="fas fa-tachometer-alt mr-2 text-bugattiBlue"></i>System Telemetry</h2>
@@ -112,7 +120,7 @@
             </div>
         </div>
 
-        <!-- Main Content / Book List -->
+        <!-- Main workspace: search field, book table, and empty-state message. -->
         <div class="w-full md:w-2/3">
             <div class="bg-carbonLight p-6 rounded-xl border border-gray-800 shadow-lg min-h-[500px]">
                 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 border-b border-gray-700 pb-4 gap-4">
@@ -150,7 +158,7 @@
         </div>
     </main>
 
-    <!-- Issue Book Modal -->
+    <!-- Dialog that collects the borrower's name before issuing a book. -->
     <div id="issueModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50">
         <div class="bg-carbonLight p-6 rounded-xl w-96 max-w-[90%] border border-bugattiBlue/50 shadow-neon-strong transform transition-all scale-100">
             <h3 class="text-lg font-bold mb-4 text-white"><i class="fas fa-user-tag text-bugattiBlue mr-2"></i>Issue Asset</h3>
@@ -166,7 +174,7 @@
         </div>
     </div>
 
-    <!-- How It Works Modal (High Quality Visual Architecture) -->
+    <!-- Help dialog explaining the page's UI, JavaScript, and browser storage. -->
     <div id="howItWorksModal" class="hidden fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center z-50 p-4 overflow-y-auto">
         <div class="bg-carbonLight border border-bugattiBlue/40 shadow-neon p-6 sm:p-10 rounded-xl w-full max-w-5xl text-left my-auto relative">
             <button onclick="closeHowItWorksModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white text-2xl w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-800 transition-colors">
@@ -242,10 +250,13 @@
         </div>
     </div>
 
+    <!-- Browser-side library data and interaction handlers. -->
     <script>
         const STORAGE_KEY = 'lms_bugatti_db';
+        // Restore saved book records when the page opens, or start with an empty list.
         let books = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
 
+        // Cache frequently used page elements so handlers can update them.
         const bookListEl = document.getElementById('bookList');
         const emptyStateEl = document.getElementById('emptyState');
         const form = document.getElementById('addBookForm');
@@ -255,11 +266,13 @@
         const issueModal = document.getElementById('issueModal');
         const howItWorksModal = document.getElementById('howItWorksModal');
 
+        // Persist the current list and refresh the visible table and counters.
         function saveBooks() {
             localStorage.setItem(STORAGE_KEY, JSON.stringify(books));
             renderBooks(searchInput.value);
         }
 
+        // Render matching records, update the empty state, and recalculate totals.
         function renderBooks(filterText = '') {
             bookListEl.innerHTML = '';
             
@@ -307,6 +320,7 @@
             issuedEl.innerText = books.filter(b => b.status === 'Issued').length.toString().padStart(2, '0');
         }
 
+        // Validate and add a new book when the add-book form is submitted.
         form.addEventListener('submit', (e) => {
             e.preventDefault();
             const id = document.getElementById('bookId').value.trim();
@@ -330,6 +344,7 @@
             form.reset();
         });
 
+        // Ask for confirmation, then remove the selected book from saved data.
         function deleteBook(id) {
             if(confirm('WARNING: Purging this asset record is irreversible. Proceed?')) {
                 books = books.filter(b => b.book_id !== id);
@@ -337,16 +352,19 @@
             }
         }
 
+        // Prepare and display the dialog for issuing the selected book.
         function openIssueModal(id) {
             document.getElementById('issueBookId').value = id;
             document.getElementById('borrowerName').value = '';
             issueModal.classList.remove('hidden');
         }
 
+        // Hide the issue dialog without changing any book records.
         function closeIssueModal() {
             issueModal.classList.add('hidden');
         }
 
+        // Validate the borrower name, mark the book issued, and save the change.
         function confirmIssue() {
             const id = document.getElementById('issueBookId').value;
             const name = document.getElementById('borrowerName').value.trim();
@@ -365,6 +383,7 @@
             }
         }
 
+        // Confirm the return, mark the book available, and clear its borrower.
         function returnBook(id) {
             if(confirm('Revoke asset from current client and mark as Available?')) {
                 const bookIndex = books.findIndex(b => b.book_id === id);
@@ -376,12 +395,12 @@
             }
         }
 
-        // Search Listener
+        // Re-render the table each time the user changes the search text.
         searchInput.addEventListener('input', (e) => {
             renderBooks(e.target.value);
         });
 
-        // How it works modal functions
+        // Show or hide the help dialog that describes the page architecture.
         function openHowItWorksModal() {
             howItWorksModal.classList.remove('hidden');
         }
@@ -390,13 +409,13 @@
             howItWorksModal.classList.add('hidden');
         }
 
-        // Close modals when clicking outside
+        // Close either dialog when the user clicks its backdrop.
         window.addEventListener('click', (e) => {
             if (e.target === issueModal) closeIssueModal();
             if (e.target === howItWorksModal) closeHowItWorksModal();
         });
 
-        // Init
+        // Draw the saved book list as soon as the page has loaded.
         renderBooks();
     </script>
 </body>
